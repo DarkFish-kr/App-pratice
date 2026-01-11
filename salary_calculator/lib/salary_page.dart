@@ -1,25 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'hourly_page.dart';
 
-class SalaryPage extends StatelessWidget {
+class SalaryPage extends StatefulWidget {
   const SalaryPage({super.key});
+
+  @override
+  State<SalaryPage> createState() => _SalaryPageState();
+}
+
+class _SalaryPageState extends State<SalaryPage> {
+  final TextEditingController _salaryController = TextEditingController(
+    text: '25000000',
+  );
+  final currencyFormat = NumberFormat("#,###", "ko_KR");
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
           child: Column(
             children: [
-              // 상단 헤더
               const Text(
                 '연봉 계산기',
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
               ),
               TextButton(
                 onPressed: () {
-                  // 시급 계산기로 이동
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const HourlyPage()),
@@ -32,43 +41,37 @@ class SalaryPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // 메인 카드 (하늘색)
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFBDE0FE).withOpacity(0.7), // 디자인의 하늘색
+                  color: const Color(0xFFBDE0FE).withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInputRow('연봉', '25,000,000원'),
+                    _buildInputField('연봉', _salaryController, '원'),
                     const Divider(color: Colors.black54),
 
-                    _buildInputRow('비과세액', '0원'),
+                    _buildStaticInputRow('비과세액', '0원'),
                     const Divider(color: Colors.black54),
 
-                    _buildInputRow('부양가족수 (본인포함)', '1명'),
+                    _buildStaticInputRow('부양가족수 (본인포함)', '1명'),
                     const Divider(color: Colors.black54),
 
-                    _buildInputRow('20세 이하 자녀 수', '0명'),
+                    _buildStaticInputRow('20세 이하 자녀 수', '0명'),
                     const Divider(color: Colors.black54),
 
                     const SizedBox(height: 20),
 
-                    // 세금 상세 내역
                     _buildResultRow('국민연금 (4.5%)', '98,950원'),
                     _buildResultRow('건강보험 (3.545%)', '74,890원'),
                     _buildSubResultRow('지방소득세 (10%)', '9,840원'),
                     _buildResultRow('고용보험 (0.9%)', '18,750원'),
-                    _buildResultRow(
-                      '근로소득세(간이세액)',
-                      '22,090시간',
-                    ), // 이미지 오타인듯하나 그대로 반영
+                    _buildResultRow('근로소득세(간이세액)', '22,090원'),
                     _buildSubResultRow('지방소득세 (10%)', '2,200원'),
 
                     const SizedBox(height: 10),
-                    // 최종 예상 수령액 (붉은색 강조)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: const [
@@ -111,7 +114,36 @@ class SalaryPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInputRow(String label, String value) {
+  Widget _buildInputField(
+    String label,
+    TextEditingController controller,
+    String suffix,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 0.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(
+            width: 150,
+            child: TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.underline,
+              ),
+              decoration: InputDecoration(suffixText: suffix),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStaticInputRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 15.0),
       child: Row(
