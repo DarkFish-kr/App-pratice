@@ -34,7 +34,7 @@ class _HourlyPageState extends State<HourlyPage> {
   ];
   final List<String> _weekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
-  Set<String> _activeWorkTypes = {};
+  final Set<String> _activeWorkTypes = {};
   bool _isOver5Employees = false;
 
   // ★ [신규] 에러 메시지 변수들
