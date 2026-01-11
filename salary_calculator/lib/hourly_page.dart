@@ -37,9 +37,10 @@ class _HourlyPageState extends State<HourlyPage> {
   Set<String> _activeWorkTypes = {};
   bool _isOver5Employees = false;
 
-  // ★ [신규] 에러 메시지를 담을 변수
-  String? _startTimeError;
-  String? _endTimeError;
+  // ★ [신규] 에러 메시지 변수들
+  String? _wageError; // 시급 에러
+  String? _startTimeError; // 시작 시간 에러
+  String? _endTimeError; // 종료 시간 에러
 
   // 3. 결과값 변수
   double weeklyPay = 0;
@@ -64,17 +65,27 @@ class _HourlyPageState extends State<HourlyPage> {
       int wage =
           int.tryParse(_hourlyWageController.text.replaceAll(',', '')) ?? 0;
 
-      // 입력된 텍스트 가져오기 (비어있으면 -1로 처리해서 로직 통과)
       String startText = _startTimeController.text;
       String endText = _endTimeController.text;
 
       int startHour = int.tryParse(startText) ?? 0;
       int endHour = int.tryParse(endText) ?? 0;
 
-      // ★ [유효성 검사] 0~24 범위 체크
+      // ---------------------------------------------------
+      // ★ [유효성 검사 통합] 에러가 하나라도 있으면 계산 중단
+      // ---------------------------------------------------
       bool hasError = false;
 
-      // 시작 시간 검사
+      // 1. 시급 검사 (10,320원 미만 체크)
+      // 입력값이 있고(isNotEmpty), 10320 미만일 경우 에러
+      if (_hourlyWageController.text.isNotEmpty && wage < 10320) {
+        _wageError = '올해의 시급은 10,320원입니다.\n다시 확인 후 입력해주시기 바랍니다'; // 줄바꿈 적용
+        hasError = true;
+      } else {
+        _wageError = null;
+      }
+
+      // 2. 시작 시간 검사 (0~24 범위)
       if (startText.isNotEmpty && (startHour < 0 || startHour > 24)) {
         _startTimeError = '잘못 된 시간을 입력하셨습니다.';
         hasError = true;
@@ -82,7 +93,7 @@ class _HourlyPageState extends State<HourlyPage> {
         _startTimeError = null;
       }
 
-      // 종료 시간 검사
+      // 3. 종료 시간 검사 (0~24 범위)
       if (endText.isNotEmpty && (endHour < 0 || endHour > 24)) {
         _endTimeError = '잘못 된 시간을 입력하셨습니다.';
         hasError = true;
@@ -90,7 +101,7 @@ class _HourlyPageState extends State<HourlyPage> {
         _endTimeError = null;
       }
 
-      // ★ 에러가 하나라도 있으면 계산 중단 (기존 값 유지 or 0원 처리)
+      // ★ 에러 발생 시 모든 결과 0원으로 초기화 후 리턴
       if (hasError) {
         weeklyPay = 0;
         monthlyPay = 0;
@@ -98,13 +109,15 @@ class _HourlyPageState extends State<HourlyPage> {
         basePayResult = 0;
         holidayPayResult = 0;
         nightPayResult = 0;
-        _activeWorkTypes.clear(); // 버튼도 끔
-        return; // 함수 종료
+        _activeWorkTypes.clear();
+        return;
       }
 
-      // --- 정상 범위일 때만 아래 계산 수행 ---
+      // ---------------------------------------------------
+      // 정상 범위일 때만 계산 수행
+      // ---------------------------------------------------
 
-      // 1. 총 근무 시간 계산
+      // 1. 근무 시간 계산
       int duration = 0;
       if (endHour > startHour) {
         duration = endHour - startHour;
@@ -114,7 +127,7 @@ class _HourlyPageState extends State<HourlyPage> {
         duration = 0;
       }
 
-      // 2. 시간별 야간 시간 카운팅 & 태그 수집
+      // 2. 야간 시간 카운팅 & 태그 수집
       double nightHoursCount = 0;
       _activeWorkTypes.clear();
 
@@ -151,7 +164,7 @@ class _HourlyPageState extends State<HourlyPage> {
         holidayPayResult = holidayHours * wage;
       }
 
-      // 6. 야간근로수당 (실제 야간 시간만 0.5배)
+      // 6. 야간근로수당
       nightPayResult = 0;
       if (_isOver5Employees && nightHoursCount > 0) {
         double weeklyNightHours = nightHoursCount * workingDays;
@@ -207,6 +220,7 @@ class _HourlyPageState extends State<HourlyPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // 시급 (에러 메시지 연결)
                     _buildInputField(
                       '시급',
                       _hourlyWageController,
@@ -215,9 +229,12 @@ class _HourlyPageState extends State<HourlyPage> {
                         FilteringTextInputFormatter.digitsOnly,
                         CurrencyInputFormatter(),
                       ],
-                      null, // 에러 없음
+                      _wageError, // ★ 시급 에러 전달
                     ),
-                    const Divider(color: Colors.black54),
+
+                    // 에러가 없을 때만 구분선 표시 (디자인 깔끔하게)
+                    if (_wageError == null)
+                      const Divider(color: Colors.black54),
                     const SizedBox(height: 10),
 
                     const Text(
@@ -230,25 +247,24 @@ class _HourlyPageState extends State<HourlyPage> {
 
                     const SizedBox(height: 10),
 
-                    // 근무 시작 시간 (에러 메시지 연결)
+                    // 근무 시작 시간
                     _buildInputField(
                       '근무 시작 시간 (0~24시)',
                       _startTimeController,
                       '시',
                       [FilteringTextInputFormatter.digitsOnly],
-                      _startTimeError, // ★ 에러 변수 전달
+                      _startTimeError,
                     ),
-                    // 에러 메시지가 없을 때만 선을 그림 (디자인 깔끔하게)
                     if (_startTimeError == null)
                       const Divider(color: Colors.black54),
 
-                    // 근무 종료 시간 (에러 메시지 연결)
+                    // 근무 종료 시간
                     _buildInputField(
                       '근무 종료 시간 (0~24시)',
                       _endTimeController,
                       '시',
                       [FilteringTextInputFormatter.digitsOnly],
-                      _endTimeError, // ★ 에러 변수 전달
+                      _endTimeError,
                     ),
                     if (_endTimeError == null)
                       const Divider(color: Colors.black54),
@@ -331,13 +347,12 @@ class _HourlyPageState extends State<HourlyPage> {
     );
   }
 
-  // ★ [수정] errorText 파라미터 추가
   Widget _buildInputField(
     String label,
     TextEditingController controller,
     String suffix,
     List<TextInputFormatter>? inputFormatters,
-    String? errorText, // 추가됨
+    String? errorText,
   ) {
     String hint = label == '시급' ? '시급을 입력해주세요.' : '0';
 
@@ -345,14 +360,15 @@ class _HourlyPageState extends State<HourlyPage> {
       padding: const EdgeInsets.symmetric(vertical: 0.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start, // 에러 메시지 뜰 때 정렬 유지
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 12.0), // 텍스트 높이 중앙 정렬 보정
+            padding: const EdgeInsets.only(top: 12.0),
             child: Text(label, style: const TextStyle(fontSize: 16)),
           ),
           SizedBox(
-            width: 150, // 에러 메시지 공간 확보를 위해 너비 조정
+            // 에러 메시지가 길어서 너비를 조금 더 넉넉하게 줌 (150 -> 160)
+            width: 160,
             child: TextField(
               controller: controller,
               keyboardType: const TextInputType.numberWithOptions(
@@ -360,22 +376,23 @@ class _HourlyPageState extends State<HourlyPage> {
               ),
               inputFormatters: inputFormatters,
               textAlign: TextAlign.end,
+              // ★ 에러 메시지가 길 경우 2줄로 표시하도록 maxLines 설정
               decoration: InputDecoration(
                 border: InputBorder.none,
                 suffixText: suffix,
                 hintText: hint,
-                errorText: errorText, // ★ 에러 메시지 표시
+                errorText: errorText,
                 errorStyle: const TextStyle(
                   color: Colors.red,
-                  fontSize: 12,
-                ), // 빨간색 스타일
+                  fontSize: 11,
+                  height: 1.2,
+                ), // 글씨체 조정
+                errorMaxLines: 3, // 에러 메시지가 길면 줄바꿈 허용
                 hintStyle: TextStyle(
                   color: Colors.black.withValues(alpha: 0.45),
                   fontSize: 14,
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 8.0,
-                ), // 패딩 조정
+                contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
               ),
               style: const TextStyle(
                 fontSize: 16,
