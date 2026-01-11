@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:App-pratice}/Timer",
+            "name": "Debug Timer (Timer)",
+            "target": "Timer",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug Timer (Timer)"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:App-pratice}/Timer",
+            "name": "Release Timer (Timer)",
+            "target": "Timer",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release Timer (Timer)"
+        }
+    ]
+}
