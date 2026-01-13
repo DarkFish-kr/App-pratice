@@ -8,6 +8,7 @@ import UIKit
 #endif
 
 struct ContentView: View {
+    // MARK: - 상태 변수들
     @State private var isSettingTime = true
     @State private var isTimerRunning = false
     @State private var timer = Foundation.Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -17,45 +18,54 @@ struct ContentView: View {
     @State private var selectedSeconds = 0
     
     @State private var totalTimeRemaining = 0
-    @State private var initialTotalTime = 1 
+    @State private var initialTotalTime = 1
     
     @State private var showAlert = false
-    
-    // [변경] 바다 효과 애니메이션 상태 변수 (이전: animateFire)
     @State private var animateOcean = false
+    
+    // [설정] 어두운 회색 정의 (타이머 작동 시 배경)
+    let darkGrayColor = Color(red: 0.15, green: 0.15, blue: 0.15)
     
     var body: some View {
         VStack(spacing: 30) {
             Spacer()
             
+            // MARK: - 화면 전환 로직
             if isSettingTime {
-                // [화면 1] 시간 설정
-                HStack(spacing: 15) {
-                    CustomNumberPicker(value: $selectedHours, range: 0...99, unit: "시")
-                    CustomNumberPicker(value: $selectedMinutes, range: 0...59, unit: "분")
-                    CustomNumberPicker(value: $selectedSeconds, range: 0...59, unit: "초")
+                // [화면 1] 시간 설정 (배경: 화이트)
+                VStack {
+                    Text("타이머 설정")
+                        .font(.headline)
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 20)
+                    
+                    HStack(spacing: 15) {
+                        CustomNumberPicker(value: $selectedHours, range: 0...99, unit: "시", isDarkBackground: false)
+                        CustomNumberPicker(value: $selectedMinutes, range: 0...59, unit: "분", isDarkBackground: false)
+                        CustomNumberPicker(value: $selectedSeconds, range: 0...59, unit: "초", isDarkBackground: false)
+                    }
                 }
                 .padding()
+                
             } else {
-                // [화면 2] 타이머 작동 중 (바다 효과 및 프로그레스 바)
+                // [화면 2] 타이머 작동 중 (배경: 어두운 회색)
                 ZStack {
-                    // [변경 1] 바다 스타일 효과 (가장 뒤쪽 배경)
-                    // 타이머가 작동 중일 때만 나타납니다.
+                    // 1. 바다 스타일 효과
                     if isTimerRunning {
                         OceanEffectRing(animate: $animateOcean)
                     }
                     
-                    // 2. 회색 배경 원 (트랙)
+                    // 2. 배경 트랙
                     Circle()
                         .stroke(lineWidth: 20)
-                        .opacity(0.1)
+                        .opacity(0.3)
                         .foregroundColor(Color.gray)
                     
-                    // 3. 진행률 원 (시간에 따라 줄어듬)
+                    // 3. 진행률 원
                     Circle()
                         .trim(from: 0.0, to: CGFloat(totalTimeRemaining) / CGFloat(initialTotalTime))
                         .stroke(style: StrokeStyle(lineWidth: 20, lineCap: .round, lineJoin: .round))
-                        .foregroundColor(Color.white.opacity(0.9)) // 바다색 위에서 잘 보이도록 흰색 강조
+                        .foregroundColor(.white)
                         .rotationEffect(Angle(degrees: -90))
                         .animation(.linear(duration: 1.0), value: totalTimeRemaining)
                     
@@ -64,9 +74,8 @@ struct ContentView: View {
                         .font(.system(size: 60, weight: .bold, design: .monospaced))
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
-                        .foregroundColor(.white) // 텍스트도 흰색으로
+                        .foregroundColor(.white)
                         .padding()
-                        // 배경 위에서 잘 보이도록 그림자 추가
                         .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 2)
                 }
                 .frame(width: 300, height: 300)
@@ -78,9 +87,10 @@ struct ContentView: View {
             
             Spacer()
             
-            // 하단 버튼 영역
+            // MARK: - 하단 버튼 영역
             HStack(spacing: 20) {
                 if isSettingTime {
+                    // 시작 버튼
                     Button(action: {
                         startTimerFromSetting()
                     }) {
@@ -91,9 +101,10 @@ struct ContentView: View {
                             .frame(height: 50)
                     }
                     .buttonStyle(.borderedProminent)
-                    // [변경] 시작 버튼 색상을 바다 컨셉(파란색)으로 변경
-                    .tint(Color.blue) 
+                    .tint(Color.blue)
+                    
                 } else {
+                    // 일시정지/계속 버튼
                     Button(action: {
                         if isTimerRunning { pauseTimer() } else { resumeTimer() }
                     }) {
@@ -104,9 +115,9 @@ struct ContentView: View {
                             .frame(height: 50)
                     }
                     .buttonStyle(.borderedProminent)
-                    // [변경] 상태에 따른 버튼 색상 (작동중: 청록 / 정지: 파랑)
                     .tint(isTimerRunning ? Color.cyan : Color.blue)
                     
+                    // [수정됨] 취소 버튼: 일시정지와 동일한 UI + 대조적인 색상(빨강)
                     Button(action: {
                         resetToSetting()
                     }) {
@@ -116,15 +127,16 @@ struct ContentView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.borderedProminent) // 일시정지 버튼과 동일한 스타일
+                    .tint(Color.red) // 어두운 배경 및 파란색 버튼과 확실히 대비되는 빨간색
                 }
             }
             .padding(.horizontal, 30)
             .padding(.bottom, 30)
         }
-        // [변경] 전체 배경색을 검정으로 설정하여 바다 효과 극대화
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black) 
+        .background(isSettingTime ? Color.white : darkGrayColor)
+        .animation(.easeInOut(duration: 0.3), value: isSettingTime)
         .onTapGesture {
             hideKeyboard()
         }
@@ -148,6 +160,7 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - Helper Functions
     func playAlarmSound() {
         AudioServicesPlaySystemSound(1005)
         #if os(iOS)
@@ -164,13 +177,11 @@ struct ContentView: View {
     func startTimerFromSetting() {
         hideKeyboard()
         totalTimeRemaining = (selectedHours * 3600) + (selectedMinutes * 60) + selectedSeconds
-        
         initialTotalTime = totalTimeRemaining > 0 ? totalTimeRemaining : 1
         
         if totalTimeRemaining > 0 {
             isSettingTime = false
             resumeTimer()
-            // 타이머 시작 시 바다 애니메이션 트리거
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 animateOcean = true
             }
@@ -190,7 +201,7 @@ struct ContentView: View {
     func resetToSetting() {
         pauseTimer()
         isSettingTime = true
-        animateOcean = false // 리셋 시 애니메이션 정지
+        animateOcean = false
     }
     
     func formatTime(_ totalSeconds: Int) -> String {
@@ -201,50 +212,46 @@ struct ContentView: View {
     }
 }
 
-// --- [새로 교체된 컴포넌트] 바다 스타일 효과 링 (Ocean Effect Ring) ---
+// MARK: - Ocean Effect Ring
 struct OceanEffectRing: View {
     @Binding var animate: Bool
     
-    // 심해(Deep Blue) ~ 표층(Cyan) 그라데이션 색상
     let oceanGradient = AngularGradient(
         gradient: Gradient(colors: [
-            Color(red: 0.0, green: 0.1, blue: 0.5), // 심해색
+            Color(red: 0.0, green: 0.1, blue: 0.5),
             Color.blue,
-            Color.cyan,                             // 얕은 바다색
+            Color.cyan,
             Color.teal,
-            Color(red: 0.0, green: 0.1, blue: 0.5)  // 자연스러운 연결
+            Color(red: 0.0, green: 0.1, blue: 0.5)
         ]),
         center: .center
     )
     
     var body: some View {
         ZStack {
-            // [Layer 1] 배경 글로우 (물속 빛 번짐 효과)
             Circle()
                 .stroke(oceanGradient, lineWidth: 35)
-                .blur(radius: 15) // 부드럽게 퍼지는 느낌
+                .blur(radius: 15)
                 .rotationEffect(Angle(degrees: animate ? 360 : 0))
                 .animation(Animation.linear(duration: 8.0).repeatForever(autoreverses: false), value: animate)
             
-            // [Layer 2] 메인 물결 (선명한 링)
             Circle()
                 .stroke(oceanGradient, lineWidth: 35)
                 .blur(radius: 5)
-                // 천천히 회전하며 심해의 흐름 표현
                 .rotationEffect(Angle(degrees: animate ? 360 : 0))
                 .animation(Animation.linear(duration: 4.0).repeatForever(autoreverses: false), value: animate)
         }
-        // 물결이 숨쉬는 듯한 스케일 효과
         .scaleEffect(animate ? 1.05 : 0.95)
         .animation(Animation.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animate)
     }
 }
 
-// --- 커스텀 피커 (기존 코드 유지) ---
+// MARK: - Custom Number Picker
 struct CustomNumberPicker: View {
     @Binding var value: Int
     let range: ClosedRange<Int>
     let unit: String
+    var isDarkBackground: Bool
     
     @State private var lastDragValue: CGFloat = 0
     
@@ -257,23 +264,23 @@ struct CustomNumberPicker: View {
         return formatter
     }()
     
+    var textColor: Color {
+        return isDarkBackground ? .white : .black
+    }
+    
     var body: some View {
         VStack(spacing: 15) {
             
             Text(formatNumber(getPrevValue()))
                 .font(.system(size: 30, weight: .medium, design: .rounded))
-                .foregroundColor(Color.gray.opacity(0.5)) // 배경이 검정이므로 가독성 조정
+                .foregroundColor(Color.gray.opacity(0.5))
                 .frame(maxWidth: .infinity)
                 .frame(height: 40)
                 .contentShape(Rectangle())
                 .gesture(
                     DragGesture()
-                        .onChanged { gesture in
-                            handleDrag(translation: gesture.translation.height)
-                        }
-                        .onEnded { _ in
-                            lastDragValue = 0
-                        }
+                        .onChanged { gesture in handleDrag(translation: gesture.translation.height) }
+                        .onEnded { _ in lastDragValue = 0 }
                 )
             
             HStack(spacing: 0) {
@@ -281,7 +288,7 @@ struct CustomNumberPicker: View {
                     .font(.system(size: 50, weight: .bold, design: .rounded))
                     .multilineTextAlignment(.center)
                     .frame(width: 70)
-                    .foregroundColor(Color.white) // 배경 검정이므로 흰색으로 변경
+                    .foregroundColor(textColor)
                     .onChange(of: value) { newValue in
                         if newValue > range.upperBound { value = range.upperBound }
                         if newValue < range.lowerBound { value = range.lowerBound }
@@ -292,64 +299,40 @@ struct CustomNumberPicker: View {
                 
                 Text(unit)
                     .font(.system(size: 20))
-                    .foregroundColor(Color.white) // 배경 검정이므로 흰색으로 변경
+                    .foregroundColor(textColor)
                     .padding(.bottom, 10)
             }
             
             Text(formatNumber(getNextValue()))
                 .font(.system(size: 30, weight: .medium, design: .rounded))
-                .foregroundColor(Color.gray.opacity(0.5)) // 배경이 검정이므로 가독성 조정
+                .foregroundColor(Color.gray.opacity(0.5))
                 .frame(maxWidth: .infinity)
                 .frame(height: 40)
                 .contentShape(Rectangle())
                 .gesture(
                     DragGesture()
-                        .onChanged { gesture in
-                            handleDrag(translation: gesture.translation.height)
-                        }
-                        .onEnded { _ in
-                            lastDragValue = 0
-                        }
+                        .onChanged { gesture in handleDrag(translation: gesture.translation.height) }
+                        .onEnded { _ in lastDragValue = 0 }
                 )
         }
         .frame(width: 100)
         .padding(.vertical, 10)
-        .background(Color.white.opacity(0.1)) // 배경을 반투명 흰색으로 조정
+        .background(isDarkBackground ? Color.white.opacity(0.1) : Color.gray.opacity(0.1))
         .cornerRadius(15)
     }
     
     func handleDrag(translation: CGFloat) {
         let step: CGFloat = 30
         let diff = translation - lastDragValue
-        
-        if diff > step {
-            decrementValue()
-            lastDragValue = translation
-        } else if diff < -step {
-            incrementValue()
-            lastDragValue = translation
-        }
+        if diff > step { decrementValue(); lastDragValue = translation }
+        else if diff < -step { incrementValue(); lastDragValue = translation }
     }
     
-    func formatNumber(_ number: Int) -> String {
-        return String(format: "%02d", number)
-    }
-    
-    func incrementValue() {
-        if value < range.upperBound { value += 1 } else { value = range.lowerBound }
-    }
-    
-    func decrementValue() {
-        if value > range.lowerBound { value -= 1 } else { value = range.upperBound }
-    }
-    
-    func getPrevValue() -> Int {
-        return value > range.lowerBound ? value - 1 : range.upperBound
-    }
-    
-    func getNextValue() -> Int {
-        return value < range.upperBound ? value + 1 : range.lowerBound
-    }
+    func formatNumber(_ number: Int) -> String { String(format: "%02d", number) }
+    func incrementValue() { value = (value < range.upperBound) ? value + 1 : range.lowerBound }
+    func decrementValue() { value = (value > range.lowerBound) ? value - 1 : range.upperBound }
+    func getPrevValue() -> Int { (value > range.lowerBound) ? value - 1 : range.upperBound }
+    func getNextValue() -> Int { (value < range.upperBound) ? value + 1 : range.lowerBound }
 }
 
 #Preview {
