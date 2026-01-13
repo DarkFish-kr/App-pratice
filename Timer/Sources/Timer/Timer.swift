@@ -21,8 +21,8 @@ struct ContentView: View {
     
     @State private var showAlert = false
     
-    // [추가] 불꽃 애니메이션 회전을 위한 상태 변수
-    @State private var animateFire = false
+    // [변경] 바다 효과 애니메이션 상태 변수 (이전: animateFire)
+    @State private var animateOcean = false
     
     var body: some View {
         VStack(spacing: 30) {
@@ -37,12 +37,12 @@ struct ContentView: View {
                 }
                 .padding()
             } else {
-                // [화면 2] 타이머 작동 중 (불꽃 및 프로그레스 바)
+                // [화면 2] 타이머 작동 중 (바다 효과 및 프로그레스 바)
                 ZStack {
-                    // [추가 1] 불이 타오르는 효과 (가장 뒤쪽 배경)
+                    // [변경 1] 바다 스타일 효과 (가장 뒤쪽 배경)
                     // 타이머가 작동 중일 때만 나타납니다.
                     if isTimerRunning {
-                        BurningFireRing(animate: $animateFire)
+                        OceanEffectRing(animate: $animateOcean)
                     }
                     
                     // 2. 회색 배경 원 (트랙)
@@ -52,11 +52,10 @@ struct ContentView: View {
                         .foregroundColor(Color.gray)
                     
                     // 3. 진행률 원 (시간에 따라 줄어듬)
-                    // 불꽃이 너무 강렬해서 진행바가 잘 안 보일 수 있으니 색상을 흰색으로 변경하여 가독성을 높였습니다.
                     Circle()
                         .trim(from: 0.0, to: CGFloat(totalTimeRemaining) / CGFloat(initialTotalTime))
                         .stroke(style: StrokeStyle(lineWidth: 20, lineCap: .round, lineJoin: .round))
-                        .foregroundColor(Color.white.opacity(0.8)) // [변경] 흰색 반투명
+                        .foregroundColor(Color.white.opacity(0.9)) // 바다색 위에서 잘 보이도록 흰색 강조
                         .rotationEffect(Angle(degrees: -90))
                         .animation(.linear(duration: 1.0), value: totalTimeRemaining)
                     
@@ -65,8 +64,9 @@ struct ContentView: View {
                         .font(.system(size: 60, weight: .bold, design: .monospaced))
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
+                        .foregroundColor(.white) // 텍스트도 흰색으로
                         .padding()
-                        // [추가] 불꽃 배경 위에서도 잘 보이도록 그림자 추가
+                        // 배경 위에서 잘 보이도록 그림자 추가
                         .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 2)
                 }
                 .frame(width: 300, height: 300)
@@ -91,8 +91,8 @@ struct ContentView: View {
                             .frame(height: 50)
                     }
                     .buttonStyle(.borderedProminent)
-                    // [추가] 시작 버튼도 불타는 색상(주황/빨강)으로 변경
-                    .tint(Color.orange) 
+                    // [변경] 시작 버튼 색상을 바다 컨셉(파란색)으로 변경
+                    .tint(Color.blue) 
                 } else {
                     Button(action: {
                         if isTimerRunning { pauseTimer() } else { resumeTimer() }
@@ -104,8 +104,8 @@ struct ContentView: View {
                             .frame(height: 50)
                     }
                     .buttonStyle(.borderedProminent)
-                    // [추가] 상태에 따른 버튼 색상 변경
-                    .tint(isTimerRunning ? Color.red.opacity(0.8) : Color.orange)
+                    // [변경] 상태에 따른 버튼 색상 (작동중: 청록 / 정지: 파랑)
+                    .tint(isTimerRunning ? Color.cyan : Color.blue)
                     
                     Button(action: {
                         resetToSetting()
@@ -122,8 +122,9 @@ struct ContentView: View {
             .padding(.horizontal, 30)
             .padding(.bottom, 30)
         }
+        // [변경] 전체 배경색을 검정으로 설정하여 바다 효과 극대화
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white)
+        .background(Color.black) 
         .onTapGesture {
             hideKeyboard()
         }
@@ -169,10 +170,9 @@ struct ContentView: View {
         if totalTimeRemaining > 0 {
             isSettingTime = false
             resumeTimer()
-            // [추가] 타이머 시작 시 불꽃 애니메이션 트리거
-            // 약간의 딜레이를 주어 화면 전환 후 자연스럽게 시작되도록 함
+            // 타이머 시작 시 바다 애니메이션 트리거
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                animateFire = true
+                animateOcean = true
             }
         }
     }
@@ -190,7 +190,7 @@ struct ContentView: View {
     func resetToSetting() {
         pauseTimer()
         isSettingTime = true
-        animateFire = false // [추가] 리셋 시 애니메이션 정지
+        animateOcean = false // 리셋 시 애니메이션 정지
     }
     
     func formatTime(_ totalSeconds: Int) -> String {
@@ -201,41 +201,46 @@ struct ContentView: View {
     }
 }
 
-// --- [새로 추가된 컴포넌트] 활활 타오르는 불꽃 고리 ---
-struct BurningFireRing: View {
+// --- [새로 교체된 컴포넌트] 바다 스타일 효과 링 (Ocean Effect Ring) ---
+struct OceanEffectRing: View {
     @Binding var animate: Bool
     
-    // 불꽃 색상 그라데이션 정의 (빨강 -> 주황 -> 노랑 -> 주황 -> 빨강)
-    let fireGradient = AngularGradient(
-        gradient: Gradient(colors: [Color.red, Color.orange, Color.yellow, Color.orange, Color.red]),
+    // 심해(Deep Blue) ~ 표층(Cyan) 그라데이션 색상
+    let oceanGradient = AngularGradient(
+        gradient: Gradient(colors: [
+            Color(red: 0.0, green: 0.1, blue: 0.5), // 심해색
+            Color.blue,
+            Color.cyan,                             // 얕은 바다색
+            Color.teal,
+            Color(red: 0.0, green: 0.1, blue: 0.5)  // 자연스러운 연결
+        ]),
         center: .center
     )
     
     var body: some View {
         ZStack {
-            // [Layer 1] 바깥쪽 고리 (시계 방향으로 천천히 회전)
+            // [Layer 1] 배경 글로우 (물속 빛 번짐 효과)
             Circle()
-                .stroke(fireGradient, lineWidth: 35) // 두께를 두껍게
-                .blur(radius: 8) // 블러 효과로 불꽃처럼 번지게 표현
+                .stroke(oceanGradient, lineWidth: 35)
+                .blur(radius: 15) // 부드럽게 퍼지는 느낌
                 .rotationEffect(Angle(degrees: animate ? 360 : 0))
-                // 무한 반복 애니메이션
-                .animation(Animation.linear(duration: 4.0).repeatForever(autoreverses: false), value: animate)
+                .animation(Animation.linear(duration: 8.0).repeatForever(autoreverses: false), value: animate)
             
-            // [Layer 2] 안쪽 고리 (반시계 방향으로 조금 더 빠르게 회전)
+            // [Layer 2] 메인 물결 (선명한 링)
             Circle()
-                .stroke(fireGradient, lineWidth: 35)
-                .blur(radius: 8)
-                // 반대 방향 회전 (-360도) 및 다른 속도 (duration 3.0)로 혼돈스러운 불길 표현
-                .rotationEffect(Angle(degrees: animate ? -360 : 0))
-                .animation(Animation.linear(duration: 3.0).repeatForever(autoreverses: false), value: animate)
+                .stroke(oceanGradient, lineWidth: 35)
+                .blur(radius: 5)
+                // 천천히 회전하며 심해의 흐름 표현
+                .rotationEffect(Angle(degrees: animate ? 360 : 0))
+                .animation(Animation.linear(duration: 4.0).repeatForever(autoreverses: false), value: animate)
         }
-        // 전체적으로 약간 커졌다 작아졌다 하는 숨쉬는 효과 추가
+        // 물결이 숨쉬는 듯한 스케일 효과
         .scaleEffect(animate ? 1.05 : 0.95)
-        .animation(Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: animate)
+        .animation(Animation.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animate)
     }
 }
 
-// --- 커스텀 피커 (기존과 동일) ---
+// --- 커스텀 피커 (기존 코드 유지) ---
 struct CustomNumberPicker: View {
     @Binding var value: Int
     let range: ClosedRange<Int>
@@ -257,7 +262,7 @@ struct CustomNumberPicker: View {
             
             Text(formatNumber(getPrevValue()))
                 .font(.system(size: 30, weight: .medium, design: .rounded))
-                .foregroundColor(Color.gray.opacity(0.3))
+                .foregroundColor(Color.gray.opacity(0.5)) // 배경이 검정이므로 가독성 조정
                 .frame(maxWidth: .infinity)
                 .frame(height: 40)
                 .contentShape(Rectangle())
@@ -276,7 +281,7 @@ struct CustomNumberPicker: View {
                     .font(.system(size: 50, weight: .bold, design: .rounded))
                     .multilineTextAlignment(.center)
                     .frame(width: 70)
-                    .foregroundColor(Color.black)
+                    .foregroundColor(Color.white) // 배경 검정이므로 흰색으로 변경
                     .onChange(of: value) { newValue in
                         if newValue > range.upperBound { value = range.upperBound }
                         if newValue < range.lowerBound { value = range.lowerBound }
@@ -287,13 +292,13 @@ struct CustomNumberPicker: View {
                 
                 Text(unit)
                     .font(.system(size: 20))
-                    .foregroundColor(Color.black)
+                    .foregroundColor(Color.white) // 배경 검정이므로 흰색으로 변경
                     .padding(.bottom, 10)
             }
             
             Text(formatNumber(getNextValue()))
                 .font(.system(size: 30, weight: .medium, design: .rounded))
-                .foregroundColor(Color.gray.opacity(0.3))
+                .foregroundColor(Color.gray.opacity(0.5)) // 배경이 검정이므로 가독성 조정
                 .frame(maxWidth: .infinity)
                 .frame(height: 40)
                 .contentShape(Rectangle())
@@ -309,7 +314,7 @@ struct CustomNumberPicker: View {
         }
         .frame(width: 100)
         .padding(.vertical, 10)
-        .background(Color.gray.opacity(0.05))
+        .background(Color.white.opacity(0.1)) // 배경을 반투명 흰색으로 조정
         .cornerRadius(15)
     }
     
