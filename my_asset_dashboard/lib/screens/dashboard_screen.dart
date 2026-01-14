@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/portfolio_provider.dart';
-import '../widgets/portfolio_chart.dart'; // 차트 위젯 임포트
+import '../widgets/portfolio_chart.dart';
+import '../widgets/add_asset_bottom_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -15,7 +16,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // 앱 시작 시 가격 데이터 가져오기 (비동기 호출)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<PortfolioProvider>(context, listen: false).fetchPrices();
     });
@@ -28,8 +28,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Crypto Portfolio'),
+        centerTitle: true,
         actions: [
-          // 새로고침 버튼
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
@@ -43,7 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: Consumer<PortfolioProvider>(
         builder: (context, portfolio, child) {
-          if (portfolio.isLoading) {
+          if (portfolio.isLoading && portfolio.assets.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -51,55 +51,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // 1. 총 자산 카드
                 _buildTotalBalanceCard(
                   portfolio.totalPortfolioValue,
                   currencyFormat,
                 ),
                 const SizedBox(height: 20),
 
-                // 2. 파이 차트 추가
                 PortfolioChart(assets: portfolio.assets),
                 const SizedBox(height: 20),
 
-                // 3. 자산 리스트
                 Expanded(
                   child: ListView.builder(
                     itemCount: portfolio.assets.length,
                     itemBuilder: (context, index) {
                       final asset = portfolio.assets[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 5),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.indigo.shade50,
-                            child: Text(
-                              asset.symbol[0],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          title: Text(asset.name),
-                          subtitle: Text('${asset.amount} ${asset.symbol}'),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                currencyFormat.format(asset.totalValue),
+                      return Dismissible(
+                        key: Key(asset.id),
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          margin: const EdgeInsets.symmetric(vertical: 5),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        direction: DismissDirection.endToStart,
+                        onDismissed: (direction) {
+                          Provider.of<PortfolioProvider>(
+                            context,
+                            listen: false,
+                          ).removeAsset(asset.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('${asset.name} removed')),
+                          );
+                        },
+                        child: Card(
+                          margin: const EdgeInsets.symmetric(vertical: 5),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.indigo.shade50,
+                              child: Text(
+                                asset.symbol[0],
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Text(
-                                currencyFormat.format(asset.price),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
+                            ),
+                            title: Text(asset.name),
+                            subtitle: Text('${asset.amount} ${asset.symbol}'),
+                            trailing: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  currencyFormat.format(asset.totalValue),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                            ],
+                                Text(
+                                  currencyFormat.format(asset.price),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -111,10 +128,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            builder: (ctx) => const AddAssetBottomSheet(),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 
-  // 총 자산 카드 위젯 (변경 없음)
   Widget _buildTotalBalanceCard(double totalValue, NumberFormat format) {
     return Container(
       width: double.infinity,
@@ -128,7 +154,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            // [변경됨] withOpacity(0.3) -> withValues(alpha: 0.3)
+            color: Colors.blue.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),

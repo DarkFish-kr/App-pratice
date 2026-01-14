@@ -1,10 +1,10 @@
 class Asset {
   final String id;
   final String apiId; // API 요청용 ID (예: bitcoin)
-  final String name;
-  final String symbol;
-  final double amount;
-  double price; // 가격은 변동되므로 final 제거
+  final String name; // 화면 표시 이름 (예: Bitcoin)
+  final String symbol; // 심볼 (예: BTC)
+  final double amount; // 보유 수량
+  double price; // 현재 가격 (변동 가능)
 
   Asset({
     required this.id,

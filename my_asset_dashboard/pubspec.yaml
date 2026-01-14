@@ -40,6 +40,7 @@ dependencies:
   # (기존에 있던 cupertino_icons 등은 그대로 두세요)
   cupertino_icons: ^1.0.2
 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

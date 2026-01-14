@@ -9,7 +9,6 @@ class PortfolioChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 자산 가치가 0이면 차트를 그리지 않음
     if (assets.isEmpty || assets.every((a) => a.totalValue == 0)) {
       return const SizedBox(
         height: 200,
@@ -18,7 +17,7 @@ class PortfolioChart extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 250, // 차트 높이
+      height: 250,
       child: PieChart(
         PieChartData(
           sectionsSpace: 2,
@@ -32,7 +31,6 @@ class PortfolioChart extends StatelessWidget {
   List<PieChartSectionData> _getSections(List<Asset> assets) {
     final total = assets.fold(0.0, (sum, item) => sum + item.totalValue);
 
-    // 색상 팔레트
     final colors = [
       Colors.blueAccent,
       Colors.orangeAccent,
@@ -40,12 +38,13 @@ class PortfolioChart extends StatelessWidget {
       Colors.greenAccent,
       Colors.redAccent,
       Colors.teal,
+      Colors.amber,
     ];
 
     return List.generate(assets.length, (index) {
       final asset = assets[index];
-      final percentage = (asset.totalValue / total) * 100;
-      final isLarge = percentage > 10; // 10% 이상이면 텍스트를 좀 더 크게
+      final percentage = total == 0 ? 0.0 : (asset.totalValue / total) * 100;
+      final isLarge = percentage > 10;
 
       return PieChartSectionData(
         color: colors[index % colors.length],
@@ -53,7 +52,7 @@ class PortfolioChart extends StatelessWidget {
         title: '${percentage.toStringAsFixed(1)}%',
         radius: isLarge ? 60 : 50,
         titleStyle: TextStyle(
-          fontSize: isLarge ? 16 : 12,
+          fontSize: isLarge ? 14 : 10,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),

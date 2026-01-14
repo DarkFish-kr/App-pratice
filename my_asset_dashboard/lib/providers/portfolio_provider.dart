@@ -6,7 +6,7 @@ class PortfolioProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
 
-  // 실시간 테스트를 위해 암호화폐 위주로 더미 데이터 변경
+  // 초기 더미 데이터
   final List<Asset> _assets = [
     Asset(
       id: '1',
@@ -32,14 +32,6 @@ class PortfolioProvider with ChangeNotifier {
       amount: 3000,
       price: 0,
     ),
-    Asset(
-      id: '4',
-      apiId: 'solana',
-      name: 'Solana',
-      symbol: 'SOL',
-      amount: 50,
-      price: 0,
-    ),
   ];
 
   List<Asset> get assets => _assets;
@@ -49,18 +41,16 @@ class PortfolioProvider with ChangeNotifier {
     return _assets.fold(0.0, (sum, item) => sum + item.totalValue);
   }
 
-  // 가격 업데이트 함수
+  // 가격 업데이트
   Future<void> fetchPrices() async {
+    if (_assets.isEmpty) return;
+
     _isLoading = true;
-    notifyListeners(); // 로딩 시작 알림
+    notifyListeners();
 
-    // 자산들의 apiId만 추출 (예: ['bitcoin', 'ethereum' ...])
     final apiIds = _assets.map((e) => e.apiId).toList();
-
-    // API 호출
     final newPrices = await _apiService.fetchCoinPrices(apiIds);
 
-    // 받아온 가격을 기존 자산 리스트에 반영
     if (newPrices.isNotEmpty) {
       for (var asset in _assets) {
         if (newPrices.containsKey(asset.apiId)) {
@@ -70,6 +60,35 @@ class PortfolioProvider with ChangeNotifier {
     }
 
     _isLoading = false;
-    notifyListeners(); // 데이터 업데이트 완료 알림
+    notifyListeners();
+  }
+
+  // 자산 추가
+  Future<void> addAsset(
+    String apiId,
+    String name,
+    String symbol,
+    double amount,
+  ) async {
+    final newAsset = Asset(
+      id: DateTime.now().toString(),
+      apiId: apiId,
+      name: name,
+      symbol: symbol,
+      amount: amount,
+      price: 0,
+    );
+
+    _assets.add(newAsset);
+    notifyListeners();
+
+    // 추가 후 가격 갱신
+    await fetchPrices();
+  }
+
+  // 자산 삭제
+  void removeAsset(String id) {
+    _assets.removeWhere((asset) => asset.id == id);
+    notifyListeners();
   }
 }

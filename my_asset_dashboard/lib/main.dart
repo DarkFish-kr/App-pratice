@@ -12,7 +12,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MultiProvider를 사용하여 여러 상태를 관리할 준비를 합니다.
     return MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => PortfolioProvider())],
       child: MaterialApp(
