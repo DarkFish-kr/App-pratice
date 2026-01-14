@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>타자 연습 마스터</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@200..900&family=Poor+Story&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="mode-selector">
+            <button id="lang-ko" class="mode-btn active" onclick="changeLang('ko')">한글</button>
+            <button id="lang-en" class="mode-btn" onclick="changeLang('en')">English</button>
+        </div>
+
+        <div class="practice-selector">
+            <button id="btn-consonants" class="sub-btn active" onclick="changeLevel('consonants')">자음</button>
+            <button id="btn-vowels" class="sub-btn" onclick="changeLevel('vowels')">모음</button>
+            <button id="btn-words" class="sub-btn" onclick="changeLevel('words')">낱말</button>
+            <button id="btn-sentences" class="sub-btn" onclick="changeLevel('sentences')">단문</button>
+            <button id="btn-long" class="sub-btn" onclick="changeLevel('long')">장문</button>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-box">
+                <p>시간</p>
+                <span id="timer">0</span>s
+            </div>
+            <div class="stat-box">
+                <p>타수 (타/분)</p>
+                <span id="cpm">0</span>
+            </div>
+            <div class="stat-box">
+                <p>정확도</p>
+                <span id="accuracy">100</span>%
+            </div>
+        </div>
+
+        <div class="quote-display" id="quoteDisplay"></div>
+        
+        <div class="next-quote-display" id="nextQuoteDisplay">다음 문장이 여기에 표시됩니다...</div>
+
+        <textarea class="quote-input" id="quoteInput" placeholder="입력하려면 여기를 클릭하세요..." autofocus></textarea>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

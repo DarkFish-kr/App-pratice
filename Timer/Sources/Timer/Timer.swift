@@ -31,26 +31,20 @@ struct ContentView: View {
     // 해양 생물 도감 (랜덤 획득용)
     let marineLife = ["🐠", "🐟", "🐡", "🦈", "🐋", "🐳", "🐬", "🐙", "🦑", "🦐", "🦞", "🦀", "🐚", "🪸", "🦦"]
     
+    // 저장소 키 (Key)
+    let saveKey = "SavedMarineCreatures"
+    
     // MARK: - 2. [시각 UX] 심해 잠수 효과 (Deep Dive Gradient)
-    // 시간이 지날수록 배경이 더 어두워지는 계산 속성
     var dynamicBackgroundColor: Color {
         if isSettingTime {
             return Color.white
         } else {
-            // 진행률 (0.0 ~ 1.0)
             let progress = 1.0 - (totalTimeRemaining / initialTotalTime)
             
-            // 시작 색상: 어두운 회색 (Deep Gray)
-            let startR: Double = 0.2
-            let startG: Double = 0.25
-            let startB: Double = 0.35
+            // Deep Gray -> Abyss Black
+            let startR: Double = 0.2, startG: Double = 0.25, startB: Double = 0.35
+            let endR: Double = 0.02, endG: Double = 0.02, endB: Double = 0.05
             
-            // 종료 색상: 거의 완전한 검정 (Abyss Black)
-            let endR: Double = 0.02
-            let endG: Double = 0.02
-            let endB: Double = 0.05
-            
-            // 색상 보간 (Interpolation)
             let r = startR + (endR - startR) * progress
             let g = startG + (endG - startG) * progress
             let b = startB + (endB - startB) * progress
@@ -82,11 +76,26 @@ struct ContentView: View {
                     
                     // [게이미피케이션] 나의 바다 (수집품 보관함)
                     VStack(alignment: .leading) {
-                        Text("나의 바다 🌊")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.gray)
-                            .padding(.leading, 10)
+                        HStack {
+                            Text("나의 바다 🌊")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.gray)
+                            
+                            Spacer()
+                            
+                            // (선택사항) 초기화 버튼: 테스트용
+                            if !collectedCreatures.isEmpty {
+                                Button("방생하기") {
+                                    collectedCreatures.removeAll()
+                                    saveData() // 삭제 후 저장
+                                }
+                                .font(.caption2)
+                                .foregroundColor(.red.opacity(0.5))
+                            }
+                        }
+                        .padding(.leading, 10)
+                        .padding(.trailing, 10)
                         
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 15) {
@@ -96,6 +105,7 @@ struct ContentView: View {
                                         .foregroundColor(.gray.opacity(0.6))
                                         .padding()
                                 } else {
+                                    // 최신순으로 보여주기 위해 reversed() 사용
                                     ForEach(collectedCreatures.reversed(), id: \.self) { creature in
                                         Text(creature)
                                             .font(.system(size: 40))
@@ -112,22 +122,20 @@ struct ContentView: View {
                     .padding(.horizontal)
                 }
                 .padding()
+                .onAppear {
+                    loadData() // 앱 시작 시(또는 화면 나타날 시) 데이터 불러오기
+                }
                 
             } else {
-                // [화면 2] 타이머 작동 중 (심해 잠수 효과)
+                // [화면 2] 타이머 작동 중
                 ZStack {
-                    // 1. 바다 스타일 링
-                    if isTimerRunning {
-                        OceanEffectRing(animate: $animateOcean)
-                    }
+                    if isTimerRunning { OceanEffectRing(animate: $animateOcean) }
                     
-                    // 2. 배경 트랙
                     Circle()
                         .stroke(lineWidth: 20)
                         .opacity(0.3)
                         .foregroundColor(Color.gray)
                     
-                    // 3. 진행률 원
                     Circle()
                         .trim(from: 0.0, to: CGFloat(totalTimeRemaining) / CGFloat(initialTotalTime))
                         .stroke(style: StrokeStyle(lineWidth: 20, lineCap: .round, lineJoin: .round))
@@ -135,7 +143,6 @@ struct ContentView: View {
                         .rotationEffect(Angle(degrees: -90))
                         .animation(.linear(duration: 1.0), value: totalTimeRemaining)
                     
-                    // 4. 남은 시간 텍스트
                     VStack {
                         Text(formatTime(Int(ceil(totalTimeRemaining))))
                             .font(.system(size: 60, weight: .bold, design: .monospaced))
@@ -144,7 +151,6 @@ struct ContentView: View {
                             .foregroundColor(.white)
                             .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 2)
                         
-                        // 심해 깊이 표현 (재미 요소)
                         if isTimerRunning {
                             Text("현재 수심: \(Int((1.0 - totalTimeRemaining/initialTotalTime) * 1000))m")
                                 .font(.caption)
@@ -156,17 +162,14 @@ struct ContentView: View {
                 }
                 .frame(width: 300, height: 300)
                 .padding()
-                .onTapGesture {
-                    hideKeyboard()
-                }
+                .onTapGesture { hideKeyboard() }
             }
             
             Spacer()
             
-            // MARK: - 하단 버튼 영역 (키보드 단축키 포함)
+            // MARK: - 하단 버튼 영역
             HStack(spacing: 20) {
                 if isSettingTime {
-                    // 시작 버튼
                     Button(action: {
                         playBubbleSound()
                         startTimerFromSetting()
@@ -179,11 +182,9 @@ struct ContentView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(Color.blue)
-                    // [키보드 단축키] Space, Enter로 시작
                     .keyboardShortcut(.defaultAction)
                     
                 } else {
-                    // 일시정지/계속 버튼
                     Button(action: {
                         playBubbleSound()
                         if isTimerRunning { pauseTimer() } else { resumeTimer() }
@@ -196,10 +197,8 @@ struct ContentView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(isTimerRunning ? Color.cyan : Color.blue)
-                    // [키보드 단축키] Space로 일시정지/재개
                     .keyboardShortcut(.space, modifiers: [])
                     
-                    // 취소 버튼
                     Button(action: {
                         playBubbleSound()
                         resetToSetting()
@@ -218,21 +217,16 @@ struct ContentView: View {
                             )
                     }
                     .buttonStyle(.plain)
-                    // [키보드 단축키] ESC로 취소
                     .keyboardShortcut(.cancelAction)
                 }
             }
             .padding(.horizontal, 30)
             .padding(.bottom, 30)
         }
-        // [시각 UX] 동적 배경색 적용
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(dynamicBackgroundColor)
         .animation(.easeInOut(duration: 1.0), value: dynamicBackgroundColor)
-        .onTapGesture {
-            hideKeyboard()
-        }
-        // [보상 알림] 타이머 완주 시
+        .onTapGesture { hideKeyboard() }
         .alert(isPresented: $showRewardAlert) {
             Alert(
                 title: Text("집중 완료! 🎉"),
@@ -242,41 +236,50 @@ struct ContentView: View {
                 })
             )
         }
-        // 타이머 로직
         .onReceive(timer) { _ in
             if !isSettingTime && isTimerRunning {
                 if totalTimeRemaining > 0 {
                     totalTimeRemaining -= 1
                 } else {
-                    // 타이머 종료 (0초)
                     finishTimer()
                 }
             }
         }
     }
     
-    // MARK: - 3. 로직 함수들
+    // MARK: - 3. 로직 함수들 (데이터 저장 포함)
     
     func finishTimer() {
         isTimerRunning = false
         animateOcean = false
-        
-        // 알람 소리 재생
         playAlarmSound()
         
-        // [게이미피케이션] 랜덤 해양 생물 뽑기 및 저장
         if let creature = marineLife.randomElement() {
             newCreature = creature
             collectedCreatures.append(creature)
+            saveData() // [저장] 새로운 생물 획득 시 즉시 저장
         }
         
         showRewardAlert = true
     }
     
-    // [청각 UX] 버튼 클릭 시 물방울 소리 (System Sound 1103: Tink)
-    func playBubbleSound() {
-        AudioServicesPlaySystemSound(1103)
+    // [데이터 저장] UserDefaults에 배열 저장
+    func saveData() {
+        // UserDefaults는 배열을 직접 저장할 수 없으므로 JSON 데이터로 변환
+        if let encoded = try? JSONEncoder().encode(collectedCreatures) {
+            UserDefaults.standard.set(encoded, forKey: saveKey)
+        }
     }
+    
+    // [데이터 로드] 앱 켜질 때 불러오기
+    func loadData() {
+        if let data = UserDefaults.standard.data(forKey: saveKey),
+            let decoded = try? JSONDecoder().decode([String].self, from: data) {
+            collectedCreatures = decoded
+        }
+    }
+    
+    func playBubbleSound() { AudioServicesPlaySystemSound(1103) }
     
     func playAlarmSound() {
         AudioServicesPlaySystemSound(1005)
@@ -293,7 +296,6 @@ struct ContentView: View {
     
     func startTimerFromSetting() {
         hideKeyboard()
-        // Double 타입으로 변환
         totalTimeRemaining = Double((selectedHours * 3600) + (selectedMinutes * 60) + selectedSeconds)
         initialTotalTime = totalTimeRemaining > 0 ? totalTimeRemaining : 1
         
@@ -330,129 +332,59 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Ocean Effect Ring (동일)
+// MARK: - Ocean Effect Ring & Picker (변동 없음)
 struct OceanEffectRing: View {
     @Binding var animate: Bool
-    
     let oceanGradient = AngularGradient(
-        gradient: Gradient(colors: [
-            Color(red: 0.0, green: 0.1, blue: 0.5),
-            Color.blue,
-            Color.cyan,
-            Color.teal,
-            Color(red: 0.0, green: 0.1, blue: 0.5)
-        ]),
+        gradient: Gradient(colors: [Color(red: 0, green: 0.1, blue: 0.5), Color.blue, Color.cyan, Color.teal, Color(red: 0, green: 0.1, blue: 0.5)]),
         center: .center
     )
-    
     var body: some View {
         ZStack {
-            Circle()
-                .stroke(oceanGradient, lineWidth: 35)
-                .blur(radius: 15)
-                .rotationEffect(Angle(degrees: animate ? 360 : 0))
+            Circle().stroke(oceanGradient, lineWidth: 35).blur(radius: 15).rotationEffect(Angle(degrees: animate ? 360 : 0))
                 .animation(Animation.linear(duration: 8.0).repeatForever(autoreverses: false), value: animate)
-            
-            Circle()
-                .stroke(oceanGradient, lineWidth: 35)
-                .blur(radius: 5)
-                .rotationEffect(Angle(degrees: animate ? 360 : 0))
+            Circle().stroke(oceanGradient, lineWidth: 35).blur(radius: 5).rotationEffect(Angle(degrees: animate ? 360 : 0))
                 .animation(Animation.linear(duration: 4.0).repeatForever(autoreverses: false), value: animate)
         }
-        .scaleEffect(animate ? 1.05 : 0.95)
-        .animation(Animation.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animate)
+        .scaleEffect(animate ? 1.05 : 0.95).animation(Animation.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animate)
     }
 }
 
-// MARK: - Custom Number Picker (동일)
 struct CustomNumberPicker: View {
     @Binding var value: Int
     let range: ClosedRange<Int>
     let unit: String
     var isDarkBackground: Bool
-    
     @State private var lastDragValue: CGFloat = 0
-    
     let numberFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.minimumIntegerDigits = 2
-        formatter.maximumIntegerDigits = 2
-        formatter.minimum = 0
-        formatter.maximum = 99
-        return formatter
+        let f = NumberFormatter(); f.minimumIntegerDigits = 2; f.maximumIntegerDigits = 2; return f
     }()
     
-    var textColor: Color {
-        return isDarkBackground ? .white : .black
-    }
+    var textColor: Color { isDarkBackground ? .white : .black }
     
     var body: some View {
         VStack(spacing: 15) {
-            
-            Text(formatNumber(getPrevValue()))
-                .font(.system(size: 30, weight: .medium, design: .rounded))
-                .foregroundColor(Color.gray.opacity(0.5))
-                .frame(maxWidth: .infinity)
-                .frame(height: 40)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture()
-                        .onChanged { gesture in handleDrag(translation: gesture.translation.height) }
-                        .onEnded { _ in lastDragValue = 0 }
-                )
-            
+            Text(formatNumber(getPrevValue())).font(.system(size: 30, weight: .medium, design: .rounded)).foregroundColor(Color.gray.opacity(0.5)).frame(maxWidth: .infinity).frame(height: 40).contentShape(Rectangle())
+                .gesture(DragGesture().onChanged { g in handleDrag(translation: g.translation.height) }.onEnded { _ in lastDragValue = 0 })
             HStack(spacing: 0) {
-                TextField("00", value: $value, formatter: numberFormatter)
-                    .font(.system(size: 50, weight: .bold, design: .rounded))
-                    .multilineTextAlignment(.center)
-                    .frame(width: 70)
-                    .foregroundColor(textColor)
-                    .onChange(of: value) { newValue in
-                        if newValue > range.upperBound { value = range.upperBound }
-                        if newValue < range.lowerBound { value = range.lowerBound }
-                    }
-                    #if os(iOS)
-                    .keyboardType(.numberPad)
-                    #endif
-                
-                Text(unit)
-                    .font(.system(size: 20))
-                    .foregroundColor(textColor)
-                    .padding(.bottom, 10)
+                TextField("00", value: $value, formatter: numberFormatter).font(.system(size: 50, weight: .bold, design: .rounded)).multilineTextAlignment(.center).frame(width: 70).foregroundColor(textColor)
+                    .onChange(of: value) { n in if n > range.upperBound { value = range.upperBound }; if n < range.lowerBound { value = range.lowerBound } }
+                Text(unit).font(.system(size: 20)).foregroundColor(textColor).padding(.bottom, 10)
             }
-            
-            Text(formatNumber(getNextValue()))
-                .font(.system(size: 30, weight: .medium, design: .rounded))
-                .foregroundColor(Color.gray.opacity(0.5))
-                .frame(maxWidth: .infinity)
-                .frame(height: 40)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture()
-                        .onChanged { gesture in handleDrag(translation: gesture.translation.height) }
-                        .onEnded { _ in lastDragValue = 0 }
-                )
+            Text(formatNumber(getNextValue())).font(.system(size: 30, weight: .medium, design: .rounded)).foregroundColor(Color.gray.opacity(0.5)).frame(maxWidth: .infinity).frame(height: 40).contentShape(Rectangle())
+                .gesture(DragGesture().onChanged { g in handleDrag(translation: g.translation.height) }.onEnded { _ in lastDragValue = 0 })
         }
-        .frame(width: 100)
-        .padding(.vertical, 10)
-        .background(isDarkBackground ? Color.white.opacity(0.1) : Color.gray.opacity(0.1))
-        .cornerRadius(15)
+        .frame(width: 100).padding(.vertical, 10).background(isDarkBackground ? Color.white.opacity(0.1) : Color.gray.opacity(0.1)).cornerRadius(15)
     }
-    
     func handleDrag(translation: CGFloat) {
-        let step: CGFloat = 30
-        let diff = translation - lastDragValue
-        if diff > step { decrementValue(); lastDragValue = translation }
-        else if diff < -step { incrementValue(); lastDragValue = translation }
+        let step: CGFloat = 30; let diff = translation - lastDragValue
+        if diff > step { decrementValue(); lastDragValue = translation } else if diff < -step { incrementValue(); lastDragValue = translation }
     }
-    
-    func formatNumber(_ number: Int) -> String { String(format: "%02d", number) }
-    func incrementValue() { value = (value < range.upperBound) ? value + 1 : range.lowerBound }
-    func decrementValue() { value = (value > range.lowerBound) ? value - 1 : range.upperBound }
-    func getPrevValue() -> Int { (value > range.lowerBound) ? value - 1 : range.upperBound }
-    func getNextValue() -> Int { (value < range.upperBound) ? value + 1 : range.lowerBound }
+    func formatNumber(_ n: Int) -> String { String(format: "%02d", n) }
+    func incrementValue() { value = value < range.upperBound ? value + 1 : range.lowerBound }
+    func decrementValue() { value = value > range.lowerBound ? value - 1 : range.upperBound }
+    func getPrevValue() -> Int { value > range.lowerBound ? value - 1 : range.upperBound }
+    func getNextValue() -> Int { value < range.upperBound ? value + 1 : range.lowerBound }
 }
 
-#Preview {
-    ContentView()
-}
+#Preview { ContentView() }

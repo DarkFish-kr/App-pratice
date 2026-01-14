@@ -1,0 +1,172 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #222;
+    color: #eee;
+    font-family: "Inconsolata", "Poor Story", monospace;
+}
+
+.container {
+    background-color: #333;
+    padding: 2rem;
+    border-radius: 1rem;
+    width: 800px;
+    max-width: 95%;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+/* 언어 선택 버튼 */
+.mode-selector {
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.mode-btn {
+    background-color: #444;
+    border: 1px solid #555;
+    color: #aaa;
+    padding: 0.5rem 1.5rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.mode-btn.active {
+    background-color: #dcb1ff;
+    color: #222;
+    font-weight: bold;
+    border-color: #dcb1ff;
+}
+
+/* 연습 종류 선택 버튼 */
+.practice-selector {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.sub-btn {
+    background-color: transparent;
+    border: 1px solid #666;
+    color: #ccc;
+    padding: 0.3rem 0.8rem;
+    border-radius: 1rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.sub-btn:hover {
+    background-color: #444;
+}
+
+.sub-btn.active {
+    background-color: #eee;
+    color: #222;
+    font-weight: bold;
+    border-color: #eee;
+}
+
+/* 통계 박스 */
+.stats-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 2rem;
+    background-color: #444;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.stat-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 30%;
+}
+
+.stat-box p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-bottom: 0.2rem;
+}
+
+.stat-box span {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #dcb1ff;
+}
+
+/* 문장 표시 영역 */
+.quote-display {
+    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+    line-height: 1.6;
+    word-break: break-all;
+    min-height: 2.5rem;
+    transition: all 0.3s ease; /* 크기 변경 시 부드럽게 */
+}
+
+/* [NEW] 한 글자 연습일 때 적용할 스타일 */
+.quote-display.single-char {
+    font-size: 5rem; /* 글자 크기 대폭 확대 */
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+/* 다음 문장 미리보기 스타일 */
+.next-quote-display {
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+    color: #fff; 
+    opacity: 0.3; 
+    min-height: 2rem;
+    user-select: none; 
+}
+
+/* 입력창 스타일 */
+.quote-input {
+    background-color: transparent;
+    border: 2px solid #555;
+    border-radius: 0.5rem;
+    outline: none;
+    width: 100%;
+    height: 10rem;
+    resize: none;
+    padding: 1rem;
+    font-size: 1.2rem;
+    color: white;
+    font-family: inherit;
+}
+
+.quote-input:focus {
+    border-color: #dcb1ff;
+}
+
+.correct { color: #4caf50; }
+.incorrect { color: #f44336; text-decoration: underline; }
+
+/* ... 기존 코드 아래에 추가 ... */
+
+/* [NEW] 입력이 끝났을 때(엔터 대기 상태) 스타일 */
+.quote-input.finished {
+    border-color: #ffd700; /* 금색 (엔터 누르라는 신호) */
+    background-color: rgba(255, 215, 0, 0.1); /* 살짝 노란 배경 */
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
